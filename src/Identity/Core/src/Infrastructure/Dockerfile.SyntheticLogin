@@ -1,0 +1,27 @@
+# Define .NET version variable
+ARG DOTNET_VERSION=9.0
+
+# Stage 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
+WORKDIR /app
+
+# Copy the necessary project files
+COPY . ./
+RUN dotnet restore
+RUN dotnet build --no-restore --configuration Release
+
+# Stage 2: Publish
+RUN dotnet publish --no-restore --configuration Release --output /app/publish
+
+# Stage 3: Runtime (Final Image)
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
+WORKDIR /app
+
+# Copy published output from build stage
+COPY --from=build /app/publish .
+
+# Expose port 5000 for HTTP traffic
+EXPOSE 5000
+
+# Entry point for running the application
+ENTRYPOINT ["dotnet", "Microsoft.AspNetCore.Identity.dll"]
